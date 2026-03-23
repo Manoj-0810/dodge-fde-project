@@ -1,442 +1,192 @@
-\# 🚀 ERP Context Graph + LLM Query System
+# 🚀 Context Graph + LLM Query System for ERP Data
 
+## 📌 Overview
 
+This project implements a **Context Graph-based reasoning system** over ERP Order-to-Cash data, combined with a **Large Language Model (LLM)** interface for natural language querying.
 
-\## 📌 Overview
+Instead of writing SQL or navigating complex schemas, users can directly ask:
 
+> *"Give me invoices for order 740509"*
 
+and receive structured results instantly.
 
-This project implements a \*\*Context Graph-based Query System\*\* over ERP (Order-to-Cash) data, enhanced with a \*\*Large Language Model (LLM)\*\* interface.
+---
 
+## 🎯 Key Idea
 
+ERP systems are inherently **relational and multi-hop**:
 
-The system allows users to query enterprise data using \*\*natural language\*\*, instead of writing SQL or navigating complex relational tables.
+* Orders → Deliveries → Billing → Payments
 
+Traditional querying is rigid and unintuitive.
 
+👉 This project converts ERP data into a **graph representation** and layers an **LLM-driven query interface** on top.
 
-\---
+---
 
+## 🧠 Architecture
 
-
-\## 🎯 Problem Statement
-
-
-
-ERP systems store highly interconnected data across multiple tables (Sales Orders, Deliveries, Billing, Payments).
-
-
-
-Traditional querying:
-
-
-
-\* Requires SQL joins ❌
-
-\* Difficult for non-technical users ❌
-
-\* Not intuitive ❌
-
-
-
-\---
-
-
-
-\## ✅ Solution
-
-
-
-We transform relational ERP data into a \*\*graph structure\*\*, enabling intuitive traversal, and integrate an \*\*LLM layer\*\* to interpret natural language queries.
-
-
-
-\---
-
-
-
-\## 🧠 System Architecture
-
-
-
-```
-
+```id="arch1"
 User Query (Natural Language)
-
-&#x20;       ↓
-
+        ↓
 Gemini LLM (Intent + Entity Extraction)
-
-&#x20;       ↓
-
+        ↓
 Query Engine (Python)
-
-&#x20;       ↓
-
-Graph (NetworkX आधारित ERP model)
-
-&#x20;       ↓
-
-Result (Billing / Delivery / etc.)
-
-&#x20;       ↓
-
-Streamlit UI
-
+        ↓
+Context Graph (NetworkX)
+        ↓
+ERP Data Traversal
+        ↓
+Response (UI / CLI)
 ```
 
+---
 
+## 🔗 Graph Modeling
 
-\---
+We model ERP as a **directed graph**:
 
+### Nodes
 
+* SalesOrder (`SO_xxx`)
+* Delivery (`D_xxx`)
+* Billing (`B_xxx`)
 
-\## 🗂️ Dataset
+### Edges
 
+* SalesOrder → Delivery
+* Delivery → Billing
 
+This enables natural traversal:
 
-SAP Order-to-Cash dataset containing:
-
-
-
-\* Sales Orders
-
-\* Delivery Documents
-
-\* Billing Documents
-
-\* Payment Records
-
-
-
-\---
-
-
-
-\## 🔗 Graph Modeling
-
-
-
-We convert ERP tables into a \*\*directed graph\*\*:
-
-
-
-\### Nodes:
-
-
-
-\* SalesOrder (`SO\_xxx`)
-
-\* Delivery (`D\_xxx`)
-
-\* Billing (`B\_xxx`)
-
-
-
-\### Edges:
-
-
-
-\* SalesOrder → Delivery
-
-\* Delivery → Billing
-
-
-
-This enables efficient traversal like:
-
-
-
-```
-
+```id="flow1"
 SalesOrder → Delivery → Billing
-
 ```
 
+---
 
+## 🤖 LLM Integration (Gemini 2.5 Flash)
 
-\---
+We use **Gemini 2.5 Flash** to:
 
+* Interpret natural language queries
+* Extract structured intent
+* Map queries to graph operations
 
-
-\## 🤖 LLM Integration (Gemini)
-
-
-
-We use \*\*Google Gemini API\*\* to:
-
-
-
-\* Understand user intent
-
-\* Extract relevant entities (e.g., Sales Order ID)
-
-\* Map natural language → graph query
-
-
-
-\### Example:
-
-
+### Example
 
 Input:
 
-
-
-```
-
+```id="ex1"
 give me invoices for order 740509
-
 ```
 
+LLM Output (parsed):
 
-
-LLM extracts:
-
-
-
+```id="ex2"
+intent = get_billing
+sales_order_id = 740509
 ```
 
-intent = get\_billing
+---
 
-sales\_order\_id = 740509
+## ⚙️ Tech Stack
 
+* Python
+* NetworkX (Graph modeling)
+* Streamlit (UI)
+* Google Gemini API (LLM reasoning)
+
+---
+
+## 🧪 Example Queries
+
+* show billing for sales order 740509
+* give me invoices for order 740509
+* what billing docs are linked to 740509
+
+---
+
+## 📊 Example Output
+
+```id="out1"
+billing documents: ['B_90504204', 'B_91150217']
 ```
 
+---
 
+## 🧠 Design Decisions
 
-\---
+### 1. Graph over Relational Queries
 
+Multi-hop traversal becomes simpler and more intuitive than SQL joins.
 
+### 2. LLM for Query Understanding
 
-\## ⚙️ Tech Stack
+Avoids rigid keyword parsing and supports flexible phrasing.
 
+### 3. Modular System Design
 
+* Graph layer
+* Query engine
+* LLM interface
+* UI layer
 
-\* Python
+---
 
-\* NetworkX (Graph modeling)
+## ⚠️ Limitations
 
-\* Streamlit (UI)
+* Limited query types (currently billing-focused)
+* In-memory graph (no persistence)
+* Basic LLM parsing (can be extended)
 
-\* Google Gemini API (LLM)
+---
 
+## 🔮 Future Improvements
 
+* Add Payments and Customer nodes
+* Multi-hop reasoning (Order → Payment)
+* Graph visualization (interactive)
+* Conversational memory (chat history)
 
-\---
+---
 
+## 🚀 How to Run
 
+### Install dependencies
 
-\## 🧪 Example Queries
-
-
-
-\* show billing for sales order 740509
-
-\* give me invoices for order 740509
-
-\* find billing docs linked to 740509
-
-
-
-\---
-
-
-
-\## 📊 Output Example
-
-
-
-```
-
-billing documents: \['B\_90504204', 'B\_91150217']
-
-```
-
-
-
-\---
-
-
-
-\## 🚀 How to Run
-
-
-
-\### 1. Install dependencies
-
-
-
-```
-
+```id="run1"
 pip install networkx streamlit google-genai
-
 ```
 
+### Add API Key
 
-
-\---
-
-
-
-\### 2. Set API Key
-
-
-
-In `query\_engine.py`:
-
-
-
+```id="run2"
+client = genai.Client(api_key="YOUR_API_KEY")
 ```
 
-client = genai.Client(api\_key="YOUR\_API\_KEY")
+### Run backend
 
+```id="run3"
+python src/query_engine.py
 ```
 
+### Run UI
 
-
-\---
-
-
-
-\### 3. Run Backend
-
-
-
-```
-
-python src/query\_engine.py
-
-```
-
-
-
-\---
-
-
-
-\### 4. Run UI
-
-
-
-```
-
+```id="run4"
 streamlit run src/app.py
-
 ```
 
+---
 
+## 🏁 Conclusion
 
-\---
+This system demonstrates how **graph-based data modeling + LLM reasoning** can transform how users interact with complex enterprise systems.
 
+---
 
-
-\## 💡 Key Design Decisions
-
-
-
-\### 1. Graph over SQL
-
-
-
-Graph traversal simplifies multi-hop queries compared to complex joins.
-
-
-
-\### 2. LLM for Query Understanding
-
-
-
-Avoids rigid keyword-based parsing and supports flexible natural language.
-
-
-
-\### 3. Modular Architecture
-
-
-
-\* Graph layer
-
-\* Query layer
-
-\* LLM layer
-
-\* UI layer
-
-
-
-\---
-
-
-
-\## ⚠️ Limitations
-
-
-
-\* Currently supports limited query types
-
-\* No persistent storage (in-memory graph)
-
-\* Basic LLM parsing (can be extended)
-
-
-
-\---
-
-
-
-\## 🔮 Future Improvements
-
-
-
-\* Add more entity types (Payments, Customers)
-
-\* Multi-hop reasoning queries
-
-\* Graph visualization (interactive)
-
-\* Conversation memory (chat history)
-
-
-
-\---
-
-
-
-\## 🏁 Conclusion
-
-
-
-This project demonstrates how combining:
-
-
-
-\* Graph-based data modeling
-
-\* LLM-powered interfaces
-
-
-
-can significantly improve how users interact with complex enterprise systems.
-
-
-
-\---
-
-
-
-\## 👨‍💻 Author
-
-
+## 👨‍💻 Author
 
 Manoj RS
-
 B.E. Electronics and Communication Engineering
-
 AI/ML Enthusiast
-
-
-
-\---
-
-
-
