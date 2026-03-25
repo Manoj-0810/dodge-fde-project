@@ -69,7 +69,6 @@ def extract_rule_based(query):
     so_match = re.findall(r"\d+", query)
     so_id = so_match[0] if so_match else None
 
-    # 🔥 FIX: prioritize advanced query first
     if "highest" in query and "billing" in query:
         return "top_billed_orders", None
 
@@ -115,11 +114,10 @@ def trace_flow(graph, so_id):
         d_id = d.replace("D_", "")
 
         if bills:
-            b_ids = []
             for b in bills:
                 flow_nodes.append(b)
-                b_ids.append(b.replace("B_", ""))
 
+            b_ids = [b.replace("B_", "") for b in bills]
             response += f"• Delivery {d_id} → Billing {', '.join(b_ids)}\n"
         else:
             response += f"• Delivery {d_id} → Not billed\n"
@@ -127,6 +125,29 @@ def trace_flow(graph, so_id):
     return {"text": response, "flow": flow_nodes}
 
 
+# 🔥 FIXED
+def get_top_orders(graph):
+    orders = []
+
+    for node, data in graph.nodes(data=True):
+        if data.get("type") == "SalesOrder":
+            amount = data.get("amount", 0)
+            orders.append((node, amount))
+
+    orders.sort(key=lambda x: x[1], reverse=True)
+
+    response = "Top Sales Orders:\n"
+    flow_nodes = []
+
+    for node, amt in orders[:5]:
+        so_id = node.replace("SO_", "")
+        response += f"• {so_id} → {amt}\n"
+        flow_nodes.append(node)
+
+    return {"text": response, "flow": flow_nodes}
+
+
+# 🔥 FIXED
 def get_top_billed_orders(graph):
     counts = {}
 
@@ -144,31 +165,14 @@ def get_top_billed_orders(graph):
     sorted_orders = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:5]
 
     response = "Top Sales Orders by Billing Count:\n"
+    flow_nodes = []
 
     for so, count in sorted_orders:
         so_id = so.replace("SO_", "")
         response += f"• {so_id} → {count} billings\n"
+        flow_nodes.append(so)
 
-    return {"text": response, "flow": []}
-
-
-def get_top_orders(graph):
-    orders = []
-
-    for node, data in graph.nodes(data=True):
-        if data.get("type") == "SalesOrder":
-            amount = data.get("amount", 0)
-            orders.append((node, amount))
-
-    orders.sort(key=lambda x: x[1], reverse=True)
-
-    response = "Top Sales Orders:\n"
-
-    for node, amt in orders[:5]:
-        so_id = node.replace("SO_", "")
-        response += f"• {so_id} → {amt}\n"
-
-    return {"text": response, "flow": []}
+    return {"text": response, "flow": flow_nodes}
 
 
 def find_broken_flow(graph, so_id):
@@ -183,13 +187,13 @@ def find_broken_flow(graph, so_id):
     deliveries = list(graph.successors(so_node))
 
     if not deliveries:
-        return {"text": f"Broken flow: No delivery for Sales Order {so_id}", "flow": []}
+        return {"text": f"Broken flow: No delivery for Sales Order {so_id}", "flow": [so_node]}
 
     for d in deliveries:
         if not list(graph.successors(d)):
-            return {"text": f"Broken flow: Delivery exists but not billed for Sales Order {so_id}", "flow": []}
+            return {"text": f"Broken flow: Delivery exists but not billed for Sales Order {so_id}", "flow": [so_node, d]}
 
-    return {"text": f"Sales Order {so_id} has complete flow", "flow": []}
+    return {"text": f"Sales Order {so_id} has complete flow", "flow": [so_node]}
 
 
 # ---------------- MAIN HANDLER ----------------
@@ -215,7 +219,9 @@ def handle_query(query):
         if not result:
             return {"text": f"No billing found for Sales Order {so_id}", "flow": []}
 
-        return {"text": f"Billing documents: {result}", "flow": []}
+        flow_nodes = [f"SO_{so_id}"] + result
+
+        return {"text": f"Billing documents: {result}", "flow": flow_nodes}
 
     elif intent == "broken_flow":
         return find_broken_flow(G, so_id)
