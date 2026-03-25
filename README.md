@@ -280,6 +280,17 @@ Included:
 See `/ai_logs/` for full transcripts.
 
 ---
+## Dataset Note
+
+The original SAP O2C dataset is large and exceeds GitHub/Streamlit deployment limits.
+
+For deployment purposes, a representative subset of the dataset has been used (`dataset_sample/`), preserving the original structure and relationships.
+
+This ensures:
+- Full functionality of the system
+- Successful deployment and demo access
+- Realistic graph behavior
+
 
 ## 🎯 Conclusion
 
