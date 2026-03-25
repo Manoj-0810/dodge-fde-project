@@ -1,302 +1,281 @@
 # 🚀 ERP Graph Assistant
 
-An interactive system that models SAP Order-to-Cash (O2C) data as a graph and enables users to query it using natural language. The system combines graph-based reasoning, structured query translation, and visualization to provide accurate, data-grounded insights.
+An interactive **graph-based ERP analytics system** that enables users to explore Order-to-Cash (O2C) business processes using **natural language queries** and **visual graph exploration**.
 
 ---
 
 ## 🧠 Overview
 
-This project transforms ERP transactional data into a **directed graph** and allows users to:
+This project models ERP transactional data as a **directed graph** and provides:
 
-- Explore relationships between business entities
-- Query the system using natural language
-- Visualize process flows interactively
-- Detect incomplete or broken workflows
-
----
-
-## 🏗️ Architecture
-
-### 🔹 Core Components
-
-1. **Graph Layer (NetworkX)**
-   - Constructs a directed graph from SAP O2C dataset
-   - Nodes represent entities
-   - Edges represent relationships
-
-2. **Visualization Layer (Streamlit + AGraph)**
-   - Interactive graph rendering
-   - Node selection and metadata inspection
-   - Dynamic highlighting of flows
-
-3. **Query Engine**
-   - Converts natural language → structured queries
-   - Executes graph traversal logic
-   - Returns deterministic, data-backed results
-
-4. **UI Layer (Streamlit)**
-   - Left panel: Graph visualization
-   - Right panel: Chat interface
+* 🔍 Conversational query interface (NL → Graph operations)
+* 📊 Graph-based reasoning over business flows
+* 🎯 Visual highlighting of queried entities
+* ⚡ Hybrid LLM + rule-based query processing
+* 💾 Cached graph for performance
 
 ---
 
-## 📊 Graph Modeling
+## 🏗️ System Architecture
+
+```
+User Query (Natural Language)
+        ↓
+LLM Parser  + Rule-Based Fallback
+        ↓
+Query Engine (Intent → Graph Traversal / Aggregation)
+        ↓
+NetworkX Graph (In-Memory + Cached)
+        ↓
+Streamlit UI (Chat + Interactive Graph)
+```
+
+---
+
+## 📊 Graph Modelling
 
 ### 🔹 Nodes (Entities)
 
-| Entity Type   | Representation |
-|--------------|--------------|
-| Sales Order  | `SO_<id>` |
-| Delivery     | `D_<id>` |
-| Billing      | `B_<id>` |
-
-Each node contains metadata such as:
-- Amount
-- Type
-- Billing type
-- Date
-
----
+* **Sales Orders** (`SO_*`)
+* **Deliveries** (`D_*`)
+* **Billing Documents** (`B_*`)
 
 ### 🔹 Edges (Relationships)
 
-- `Sales Order → Delivery`
-- `Delivery → Billing`
+* Sales Order → Delivery
+* Delivery → Billing
 
-This models the real-world ERP flow:
-
-Sales Order → Delivery → Billing
+👉 This directly models the **ERP Order-to-Cash lifecycle**
 
 ---
 
-### 🔹 Why Graph?
+## 💾 Database / Storage Design
 
-Graph modeling enables:
-- Easy traversal of business flows
-- Relationship-based queries
-- Efficient detection of missing links (broken flows)
+* Graph stored using **NetworkX (in-memory)**
+* Added **persistent caching (`graph.pkl`)**
 
----
+  * First run → builds graph
+  * Subsequent runs → loads cached graph
+* Design allows easy migration to:
 
-## 📈 Graph Visualization
-
-The system uses **streamlit-agraph** for interactive visualization.
-
-### 🔹 Features
-
-- Interactive node graph
-- Click any node → inspect metadata
-- Directed edges show process flow
-- Color-coded entities:
-  - 🔵 Sales Orders
-  - 🟠 Deliveries
-  - 🟢 Billing
+  * Neo4j
+  * Graph databases at scale
 
 ---
 
-### 🔥 Flow Highlighting (Key Feature)
+## 🤖 LLM Integration & Prompting
 
-When a user queries a flow:
+* Uses **Gemini (free tier)** for intent extraction
+* Converts natural language → structured JSON
 
-1. Relevant nodes are identified via graph traversal  
-2. These nodes are stored in session state (`flow_nodes`)  
-3. During rendering:
-   - Matching nodes are highlighted in **red**
-   - Edges between them are also highlighted  
+### Example:
 
-This creates a **visual trace of the query result directly on the graph**
+```
+Input:
+trace flow for sales order 740573
 
----
-
-## 💬 Conversational Query System
-
-### 🔹 How It Works
-
-1. User inputs natural language query  
-2. Query is parsed into structured format  
-3. Query is executed on the graph  
-4. Results are returned in human-readable form  
-
----
-
-### 🔹 Query Translation
-
-Example:
-
-"trace flow for sales order 740573"
-
-↓
-
+Output:
 {
-  "type": "trace_flow",
+  "intent": "trace_flow",
   "sales_order_id": "740573"
 }
+```
 
----
+### 🔁 Hybrid Design
 
-### 🔹 Supported Queries
+* LLM → primary parsing
+* Rule-based → fallback
 
-- Trace full process flow  
-- Retrieve billing documents  
-- Detect broken/incomplete flows  
-- Top sales orders by value  
-- Multi-query support (comma-separated)  
+👉 Ensures:
 
----
-
-### 🔹 Multi-Query Handling
-
-Example:
-
-trace flow for sales order 740573, show me top orders
-
-- Input is split into multiple sub-queries  
-- Each query is executed independently  
-- Results are aggregated into a single response  
-- Graph highlights all relevant nodes  
-
----
-
-## 🧾 Response Design
-
-Responses are:
-- Deterministic (no hallucination)  
-- Fully grounded in dataset  
-- Structured and consistent  
-
-Example:
-
-Flow for Sales Order 740573:
-
-• Delivery 80738093 → Billing 91150165, 90504277
+* Reliability
+* No dependency on API availability
 
 ---
 
 ## 🛡️ Guardrails
 
-To prevent misuse, the system enforces domain restrictions.
+The system restricts queries to ERP domain only.
 
-### 🔹 Implementation
+### Example:
 
-- Keyword-based filtering  
-- Rejects non-ERP queries  
+```
+Input:
+who is the president of india
 
-Example:
+Output:
+This system is designed to answer ERP dataset-related queries only.
+```
 
-User: who is the president of india  
-System: This system is designed to answer ERP dataset-related queries only.
+👉 Prevents:
 
----
-
-## ⚙️ Design Decisions
-
-### 🔹 Why NetworkX?
-
-- Lightweight and easy to use  
-- Ideal for prototyping graph-based systems  
-- Supports traversal and relationship queries  
-
-### 🔹 Tradeoff
-
-- Not scalable for very large datasets  
-- Production alternative: **Neo4j / graph databases**  
+* Hallucinations
+* Irrelevant responses
 
 ---
 
-### 🔹 Why Not Full LLM Integration?
+## 💬 Conversational Query Interface
 
-Instead of relying on LLM APIs:
+### Supported Queries
 
-- Used rule-based parsing for reliability  
-- Ensures zero hallucination  
-- Guarantees deterministic outputs  
+#### 🔹 Flow Analysis
 
----
+* `trace flow for sales order 740573`
 
-## 📦 Tech Stack
+#### 🔹 Billing Lookup
 
-- Python  
-- NetworkX  
-- Streamlit  
-- streamlit-agraph  
+* `show billing for sales order 740573`
 
----
+#### 🔹 Broken Flow Detection
 
-## 🚀 Features Summary
+* `find broken flow for sales order 740573`
 
-| Feature | Status |
-|--------|--------|
-| Graph Modeling | ✅ |
-| Interactive Visualization | ✅ |
-| Node Metadata Inspection | ✅ |
-| Flow Highlighting | ✅🔥 |
-| Natural Language Queries | ✅ |
-| Multi-Query Support | ✅ |
-| Guardrails | ✅ |
-| Broken Flow Detection | ✅ |
-| Top Orders Analysis | ✅ |
+#### 🔹 Aggregation Queries
+
+* `show me top orders`
+* `which sales orders have highest billing count`
+
+#### 🔹 Multi-Query Support
+
+* `trace flow for sales order 740573, show me top orders`
 
 ---
 
-## 🧪 Example Queries
+## 📈 Graph Visualization & Chat Integration
 
-trace flow for sales order 740573  
-show billing for sales order 740573  
-find broken flow for sales order 740573  
-show me top orders  
-trace flow for sales order 740573, show me top orders  
+This is a **core highlight of the system** ⭐
+
+### 🔗 Chat ↔ Graph Integration
+
+* User query → processed by query engine
+* Engine returns:
+
+  * Text response
+  * **List of relevant graph nodes (`flow_nodes`)**
+
+---
+
+### 🔴 Dynamic Node Highlighting
+
+Based on query results:
+
+| Query Type       | Highlight Behavior                  |
+| ---------------- | ----------------------------------- |
+| Flow Trace       | Full path (SO → Delivery → Billing) |
+| Billing Lookup   | Sales Order + Billing nodes         |
+| Top Orders       | Top Sales Order nodes               |
+| Advanced Queries | Relevant Sales Orders               |
+| Broken Flow      | Problematic nodes                   |
+
+👉 Highlighted nodes:
+
+* Colored **red**
+* Increased size
+* Connected edges emphasized
+
+---
+
+### 🧩 Interactive Features
+
+* Click nodes → view metadata
+* Color-coded entities:
+
+  * Blue → Sales Orders
+  * Orange → Deliveries
+  * Green → Billing
+  * Red → Query result
+
+---
+
+## 🧪 Key Features
+
+* ✅ Graph-based ERP modeling
+* ✅ Conversational querying
+* ✅ LLM + rule-based hybrid system
+* ✅ Multi-query support
+* ✅ Graph traversal & analytics
+* ✅ Dynamic graph highlighting
+* ✅ Persistent caching
+* ✅ Clean UI with Streamlit
 
 ---
 
 ## 📁 Project Structure
 
-src/
-├── app.py  
-├── graph_builder.py  
-├── query_engine.py  
-├── utils/  
-│   └── graph_visualization.py  
+```
+├── src/
+│   ├── app.py
+│   ├── graph_builder.py
+│   ├── query_engine.py
+│   └── utils/
+│       └── graph_visualization.py
+├── dataset_sample/
+├── ai_logs/
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
 
 ---
 
-## 📊 Future Improvements
+## ⚙️ Setup Instructions
 
-- Product-level aggregation queries  
-- Graph database integration (Neo4j)  
-- Semantic search using embeddings  
-- Advanced graph analytics  
+### 1️⃣ Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+### 2️⃣ Run application
+
+```
+streamlit run src/app.py
+```
+
+---
+
+## 🌐 Deployment
+
+* Deployed using **Streamlit Cloud**
+* Uses `dataset_sample` for lightweight execution
+* Supports optional LLM integration via API key
 
 ---
 
-## 🤖 AI Coding Workflow
+## 🧠 Design Decisions
 
-This project was developed using AI-assisted tools.
-
-Included:
-- Prompt iterations  
-- Debugging sessions  
-- Incremental improvements  
-
-See `/ai_logs/` for full transcripts.
+* Used NetworkX for simplicity and flexibility
+* Hybrid query parsing ensures robustness
+* Focused on **data-grounded responses** (no hallucination)
+* Added caching for performance optimization
+* Designed UI for **graph + chat synergy**
 
 ---
-## Dataset Note
 
-The original SAP O2C dataset is large and exceeds GitHub/Streamlit deployment limits.
+## 🚀 Evaluation Criteria Coverage
 
-For deployment purposes, a representative subset of the dataset has been used (`dataset_sample/`), preserving the original structure and relationships.
+| Area               | Implementation                      |
+| ------------------ | ----------------------------------- |
+| Code Quality       | Modular structure, clean separation |
+| Graph Modelling    | Clear entities and relationships    |
+| Database / Storage | Graph caching + scalable design     |
+| LLM Integration    | Structured parsing + fallback       |
+| Guardrails         | Strict domain restriction           |
 
-This ensures:
-- Full functionality of the system
-- Successful deployment and demo access
-- Realistic graph behavior
+---
 
+## 📌 Conclusion
 
-## 🎯 Conclusion
+This project demonstrates how structured ERP data can be transformed into an **interactive, queryable graph system**, combining:
 
-This system demonstrates how graph-based modeling combined with structured query interpretation can enable powerful, accurate, and interactive exploration of ERP data.
+* Graph analytics
+* Natural language interfaces
+* Visual exploration
 
-It prioritizes:
-- correctness over hallucination  
-- clarity over complexity  
-- usability over over-engineering  
+👉 Designed with **real-world system thinking and scalability in mind**
+
+---
+
+## 👨‍💻 Author
+
+**Manoj RS**
