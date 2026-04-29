@@ -1,11 +1,11 @@
-# 🚀 ERP Graph Assistant 
+#  ERP Graph Assistant 
 (https://dodge-fde-project-manojrs.streamlit.app)
 
 An interactive **graph-based ERP analytics system** that enables users to explore Order-to-Cash (O2C) business processes using **natural language queries** and **visual graph exploration**.
 
 ---
 
-## 🧠 Overview
+##  Overview
 
 This project models ERP transactional data as a **directed graph** and provides:
 
@@ -253,7 +253,7 @@ streamlit run src/app.py
 
 ---
 
-## 🚀 Evaluation Criteria Coverage
+##  Evaluation Criteria Coverage
 
 | Area               | Implementation                      |
 | ------------------ | ----------------------------------- |
